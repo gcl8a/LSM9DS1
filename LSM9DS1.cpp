@@ -654,6 +654,7 @@ uint8_t LSM9DS1::ReadAccelFIFO(uint8_t address, uint8_t count, bool inklGyro)
     {
         //a little slower to read them this way, but I haven't had time yet to dig deeper into Wire
         //probably adds 20 - 30% overhead
+        //problem is that the automated wrap-around in the LSM doesn't work when you stop-start
         //right now, takes ~25ms to read 16 sets of gyro and accelerometer, which is way too slow
         //if I want to run at top speed (~1kHz), which needs to be way less than 1ms/read
         //with high speed I2C (400kHz clock), you get ~25us / byte (inkl. some fluff for overhead),
@@ -663,7 +664,8 @@ uint8_t LSM9DS1::ReadAccelFIFO(uint8_t address, uint8_t count, bool inklGyro)
         //use high-speed (quick test shows it works just fine and reduces time to ~7ms/16 sets)
         //just poll accelerometer; just poll z-xl if all I want is jitter
         //slow the heck down
-        //instead of trying to process every reading, just count the big ones
+        //instead of trying to process every reading, just count the big ones:
+        //use the interrupts to count large spikes?
         
         Wire.beginTransmission(address);      // Initialize the Tx buffer
         Wire.write(OUT_X_L_G);// | 0x80);        // start at the temperature register
@@ -698,8 +700,6 @@ uint8_t LSM9DS1::ReadAccelFIFO(uint8_t address, uint8_t count, bool inklGyro)
     return count;
 }
 
-
-
 void LSM9DS1::ProcessReadings(void)
 {
     currReading.timestamp = millis(); //not really true
@@ -707,11 +707,8 @@ void LSM9DS1::ProcessReadings(void)
     float32vector gyroValues = CalcGyro();
     ahrs.UpdateGyro(gyroValues[0], gyroValues[1], gyroValues[2]);
 
-    currReading.timestamp = millis(); //not really true
     ReadAccel();
     float32vector accelValues = CalcAccel();
     ahrs.CorrectAccel(accelValues[0], accelValues[1], accelValues[2]);
-    
-    //return status & 0x03;
 }
 

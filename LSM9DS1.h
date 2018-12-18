@@ -37,14 +37,8 @@ Distributed as-is; no warranty is given.
 #define int16vector TVector<int16_t>
 #define int16matrix TMatrix<int16_t>
 
-#define LSM9DS1_AG_ADDR(sa0)    ((sa0) == 0 ? 0x6A : 0x6B)
-#define LSM9DS1_M_ADDR(sa1)        ((sa1) == 0 ? 0x1C : 0x1E)
-
-//struct AHRSDump
-//{
-//    int16_t roll, pitch, yaw; //thousands of a radian
-//    //uint32_t timestamp = 0;
-//};
+//#define LSM9DS1_AG_ADDR(sa0)    ((sa0) == 0 ? 0x6A : 0x6B)
+//#define LSM9DS1_M_ADDR(sa1)        ((sa1) == 0 ? 0x1C : 0x1E)
 
 struct AHRSDatum
 {
@@ -55,12 +49,17 @@ struct AHRSDatum
     {
         char dataStr[100];
         
+//        sprintf(dataStr, "%lu,%i,%i,%i",    //mrad
+//                timestamp % 1000,
+//                roll,
+//                pitch,
+//                yaw);
         sprintf(dataStr, "%lu,%2.2f,%2.2f,%2.2f",
                 timestamp,
                 roll / 1000.0,
                 pitch / 1000.0,
                 yaw / 1000.0);
-        
+
         return String(dataStr);
     }
 };
@@ -87,18 +86,12 @@ public:
     {
         float32vector rpy = ahrs.RPY();
 
-        currReading.roll = rpy[0];
-        currReading.pitch = rpy[1];
-        currReading.yaw = rpy[2];
+        currReading.roll = rpy[0] * 1000; //stored as mrad
+        currReading.pitch = rpy[1] * 1000;
+        currReading.yaw = rpy[2] * 1000;
         
         return currReading;
     }
-    
-//    AHRSDump MakeDataDump(void)
-//    {
-//        CalcRPY();
-//        return currReading.MakeDataDump();
-//    }
     
     String MakeDataString(void) {return currReading.MakeDataString();}
 };
